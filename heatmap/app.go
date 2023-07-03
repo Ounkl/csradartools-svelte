@@ -22,6 +22,14 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const (
+	NoTeams byte = 0
+	AllTeams byte = 1
+	TeamTerrorists byte = 2
+	TeamCounterTerrorists byte = 3
+)
+
+
 // App struct
 type App struct {
 	ctx  context.Context
@@ -32,6 +40,8 @@ type Replay struct {
 	gameTicks   []Tick
 	mapMetadata ex.Map
 	mapName     string
+	controlVectors []controlVector
+	Boundaries []Vector
 }
 
 type Tick struct {
@@ -43,11 +53,22 @@ type Player struct {
 	X             float64
 	Y             float64
 	ViewDirection float32
+	Team 		  byte
 }
 
 type Point struct {
 	X float32
 	Y float32
+}
+
+type controlVector struct {
+	vec Vector
+	state byte
+}
+
+type Vector struct {
+	A Point
+	B Point
 }
 
 // NewApp creates a new App application struct
@@ -133,7 +154,7 @@ func (a *App) parseMatch(dem demoinfocs.Parser) {
 		var players []Player
 
 		for _, player := range dem.GameState().Participants().Playing() {
-			players = append(players, Player{player.Name, player.Position().X, player.Position().Y, player.ViewDirectionX()})
+			players = append(players, Player{player.Name, player.Position().X, player.Position().Y, player.ViewDirectionX(), byte(player.Team)})
 		}
 
 		a.demo.gameTicks = append(a.demo.gameTicks, Tick{players})
@@ -200,6 +221,13 @@ func (a *App) WriteBoundary(boundary []int) {
 	fmt.Println("Wrote.")
 }
 
+//DONT FORGET TO HAVE A STATE PROVIDED
+func (a *App) DefineControlVector(vector[] float32, state byte)  {
+	a.demo.controlVectors = append(a.demo.controlVectors, controlVector{Vector{Point{vector[0], -vector[1]}, Point{vector[2], -vector[3]}}, state})
+
+	fmt.Println(controlVector{Vector{Point{vector[0], vector[1]}, Point{vector[2], vector[3]}}, state})
+}
+
 func (a *App) GetViewDirections(tick int) []float32 {
 
 	var directionRays []float32
@@ -231,6 +259,190 @@ func (a *App) GetViewDirections(tick int) []float32 {
 	}
 
 	return directionRays
+}
+
+func (a *App) GetTicksOfInterest() []int {
+
+	fmt.Println("Finding ticks")
+
+	var ticksOfInterest []int
+
+	for i := 0; i < len(a.demo.gameTicks); i++ {
+
+		if i % 5000 == 0 {
+			fmt.Println("Tick: ", i)
+		}
+
+		if a.CheckControlVectors(i) {
+			ticksOfInterest = append(ticksOfInterest, i)
+		}
+	}
+
+	fmt.Println("Done Finding Ticks")
+
+	return ticksOfInterest
+}
+
+func (a *App) findShortestIntersection(player Player) float64 {
+	for _, vector := range a.demo.controlVectors {
+		legb := 15 * math.Cos(float64(player.ViewDirection) * (math.Pi / 180))
+		lega := 15 * math.Sin(float64(player.ViewDirection) * (math.Pi / 180))
+
+		playerX, playerY := a.demo.mapMetadata.TranslateScale(player.X, player.Y)
+		playerVectorPointA := Point{float32(playerX), -float32(playerY)}
+		playerVectorPointB := Point{float32(playerX) + float32(legb), -float32(playerY) + float32(lega)}
+
+		controlDist, intersects := intersectPoint(playerVectorPointA, playerVectorPointB, vector.A, vector.B)
+
+		//fmt.Println(playerVectorPointA, playerVectorPointB, vector.A, vector.B)
+
+		if intersects {
+			controlDistX := controlDist.X - playerVectorPointA.X
+			controlDistY := controlDist.Y - playerVectorPointA.Y
+
+			controlDistance := math.Sqrt(float64(controlDistX*controlDistX + controlDistY*controlDistY))
+
+			//fmt.Println(controlDistance)
+
+			for i := 0; i < len(boundary); i = i + 2 {
+				dist, intersects := intersectPoint(playerVectorPointA, playerVectorPointB, boundary[i], boundary[i+1])
+
+				//fmt.Println(dist)
+
+				//fmt.Println(dist, intersects)
+
+				if intersects {
+
+					distanceX := dist.X - playerVectorPointA.X
+					distanceY := dist.Y - playerVectorPointA.Y
+
+					//pythagorean to find dist
+					distance := math.Sqrt(float64(distanceX*distanceX + distanceY*distanceY))
+					if distance < controlDistance {
+						continue playerCheck
+					}
+				}
+			}
+		}
+	}
+}
+
+func (a *App) CheckControlVectors(tick int) bool {
+
+	var boundary []Point
+
+	//load wall vectors into memory
+	file, err := os.Open("de_inferno.txt")
+
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	scanner.Scan()
+
+	var PointX int
+	var PointY int
+
+	//gets the coordinates of the vectors, uses modulo to record every two values
+	for scanner.Scan() {
+
+		PointX, _ = strconv.Atoi(scanner.Text())
+
+		scanner.Scan()
+
+		PointY, _ = strconv.Atoi(scanner.Text())
+
+		boundary = append(boundary, Point{float32(PointX), -float32(PointY)})
+
+	}
+
+
+//for each control vector
+	for _, vector := range a.demo.controlVectors {
+		var controlState byte
+
+		controlState = NoTeams
+		//for each player
+		playerCheck:
+		for _, player := range a.demo.gameTicks[tick].players {
+			//fmt.Println("Checking player ", player.Team)
+
+			if player.Team == 0 || player.Team == 1 {
+				continue
+			}
+
+			legb := 15 * math.Cos(float64(player.ViewDirection) * (math.Pi / 180))
+			//y axis is inverted in the html canvas, so the coordinate needs to be inverted
+			lega := 15 * math.Sin(float64(player.ViewDirection) * (math.Pi / 180))
+
+			playerX, playerY := a.demo.mapMetadata.TranslateScale(player.X, player.Y)
+			playerVectorPointA := Point{float32(playerX), -float32(playerY)}
+			playerVectorPointB := Point{float32(playerX) + float32(legb), -float32(playerY) + float32(lega)}
+
+			controlDist, intersects := intersectPoint(playerVectorPointA, playerVectorPointB, vector.A, vector.B)
+
+			//fmt.Println(playerVectorPointA, playerVectorPointB, vector.A, vector.B)
+
+			if intersects {
+				controlDistX := controlDist.X - playerVectorPointA.X
+				controlDistY := controlDist.Y - playerVectorPointA.Y
+
+				controlDistance := math.Sqrt(float64(controlDistX*controlDistX + controlDistY*controlDistY))
+
+				//fmt.Println(controlDistance)
+
+				for i := 0; i < len(boundary); i = i + 2 {
+					dist, intersects := intersectPoint(playerVectorPointA, playerVectorPointB, boundary[i], boundary[i+1])
+
+					//fmt.Println(dist)
+		
+					//fmt.Println(dist, intersects)
+		
+					if intersects {
+		
+						distanceX := dist.X - playerVectorPointA.X
+						distanceY := dist.Y - playerVectorPointA.Y
+		
+						//pythagorean to find dist
+						distance := math.Sqrt(float64(distanceX*distanceX + distanceY*distanceY))
+						if distance < controlDistance {
+							continue playerCheck
+						}
+					}
+				}
+
+				if controlState == TeamCounterTerrorists {
+					if player.Team == TeamTerrorists {
+						if vector.state != AllTeams {
+							//fmt.Println("vectorstate != Allteams")
+							return false
+						}
+						break	
+					}
+				}
+
+				if controlState == TeamTerrorists {
+					if player.Team == TeamCounterTerrorists {
+						if vector.state != AllTeams {
+							//fmt.Println("vectorstate != Allteams")
+							return false
+						}
+						break
+					}
+				}
+				controlState = player.Team
+			}
+		}
+		if vector.state != controlState {
+			//fmt.Println("vectorstate != controlstate ", vector.state, " ", controlState)
+			return false
+		}
+	}
+	//check if the vector's state match and return true if so
+	return true
 }
 
 func (a *App) GetRayCast(tick int) []float32 {

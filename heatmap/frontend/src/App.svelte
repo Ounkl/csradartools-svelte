@@ -7,8 +7,12 @@
   import {WriteBoundary} from "../wailsjs/go/main/App";
   import {GetRayCast} from "../wailsjs/go/main/App";
   import {GetViewDirections} from "../wailsjs/go/main/App";
+  import {GetTicksOfInterest} from "../wailsjs/go/main/App";
+  import {DefineControlVector} from "../wailsjs/go/main/App";
+  import {CheckControlVectors} from "../wailsjs/go/main/App";
   import { tick } from 'svelte';
   import { onMount } from 'svelte';
+  
 
   var iconheight = 10;
   var iconwidth = 10;
@@ -19,6 +23,7 @@
   let Logo = logo
   let resetImg = Date.now();
   let render = 0
+  let controlState = 0
 
   let playdemo = true;
 
@@ -46,18 +51,20 @@
 
   const delay = ms => new Promise(res => setTimeout(res, ms));
 
+  let currentTick = 0;
+
   async function renderdemo() {
 
     saveCanvas();
     var tickcount;
         
         GetTickCount().then((result) => tickcount = result).then(async () => {
-            for(let i = 0; i < tickcount;) {
+            for(; currentTick < tickcount;) {
               if(playdemo) {
                 await delay(2) 
-                rendertick(i)
+                rendertick(currentTick)
                 await tick();
-                i++;
+                currentTick++;
               }
               await delay(2)
             }
@@ -68,7 +75,7 @@
 
   async function rendertick(tick) {
 
-        GetPlayerPositions(tick).then((result) => {
+        GetPlayerPositions(Number(tick)).then((result) => {
 
             players = []
 
@@ -84,17 +91,17 @@
             }
         });
 
-        GetRayCast(tick).then((result) => {
+        GetRayCast(Number(tick)).then((result) => {
 
           //console.log(tick)
-          console.log(result)
+          //console.log(result)
 
           for(let j = 0; j < result.length; j = j + 4) {
             drawLine(result[j], result[j + 1], result[j + 2], result[j + 3])
           }
         });
 
-        loadCanvas();
+        resetCanvas();
     }
 
   let mouseX = 0;
@@ -172,12 +179,13 @@
 
     if(lineCreate == true) {
         ctx.lineWidth = 5;
-        ctx.strokeStyle = 'red';
+        ctx.strokeStyle = controlState;
 
         drawLine(lineX, lineY, event.clientX, event.clientY)
 
         lineCreate = false;
 
+        DefineControlVector([lineX, lineY, event.clientX, event.clientY], Number(controlState));
         boundary.push(lineX, lineY, event.clientX, event.clientY);
 
         //console.log(boundary);
@@ -207,6 +215,23 @@
     WriteBoundary(boundary);
   }
 
+  function getTicksOfInterest() {
+    GetTicksOfInterest().then(result => {
+      console.log(result)
+    })
+  }
+
+  function resetCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function checkControlVectors() {
+    CheckControlVectors(currentTick).then(result => {
+      console.log(result)
+    })
+  }
+
+
 </script>
 
 <main>
@@ -231,7 +256,12 @@
     <button class="btn" on:click={loadCanvas}>Load</button>
     <button class="btn" on:click={saveBoundary}>Save Boundaries</button>
     <button class="btn" on:click={stopDemo}>Resume/Pause</button>
-    Mouse is {mouseX} x {mouseY}
+    <button class="btn" on:click={getTicksOfInterest}>Get Ticks Of Interest</button>
+    <button class="btn" on:click={resetCanvas}>Reset Canvas</button>
+    <button class="btn" on:click={checkControlVectors}>Check Control Vectors</button>
+    <input bind:value={currentTick} />
+    <input bind:value={controlState} />
+    Mouse is {mouseX} x {mouseY}, Tick: {currentTick}
   </div>
 
 
