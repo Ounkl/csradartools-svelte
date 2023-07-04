@@ -31,10 +31,6 @@
     playdemo = !playdemo;
   }
 
-  function greet() {
-    Greet(name).then(result => resultText = result)
-  }
-
   function getdemo() {
     GetDemo().then(updateImage).then(() => parseReady = true);
   }
@@ -79,11 +75,9 @@
 
             players = []
 
-            //console.log(tick)
-            //console.log(result)
-            for(let j = 0; j < result.length; j = j + 2) {
+            for(let j = 0; j < result.length; j++) {
 
-                let coords = [result[j], result[j + 1]]
+                let coords = [result[j].x, result[j].y]
 
                 players.push(coords)
 
@@ -93,11 +87,10 @@
 
         GetRayCast(Number(tick)).then((result) => {
 
-          //console.log(tick)
           //console.log(result)
 
-          for(let j = 0; j < result.length; j = j + 4) {
-            drawLine(result[j], result[j + 1], result[j + 2], result[j + 3])
+          for(let j = 0; j < result.length; j++) {
+            drawLine(result[j].a.x, result[j].a.y, result[j].b.x, result[j].b.y)
           }
         });
 
@@ -185,8 +178,11 @@
 
         lineCreate = false;
 
-        DefineControlVector([lineX, lineY, event.clientX, event.clientY], Number(controlState));
-        boundary.push(lineX, lineY, event.clientX, event.clientY);
+
+      //fix vector and point stuct imports
+
+        DefineControlVector({A: { X: lineX, Y: lineY }, B: { X: event.clientX, Y: event.clientY }}, Number(controlState));
+        boundary.push({A: {X: lineX, Y: lineY}, B: {X: event.clientX, Y: event.clientY}});
 
         //console.log(boundary);
 
