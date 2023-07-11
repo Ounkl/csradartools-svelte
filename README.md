@@ -4,6 +4,8 @@
 This tool is being developed personally to make watching demos easier.
 NOT meant to replace traditional ingame demo studying, just to find specific things in a demo MUCH faster.
 
+Wails is used to link the [demoinfocs-go](https://github.com/markus-wa/demoinfocs-golang) tool to a Svelte frontend.  
+
 ## Features
 The tool contains experimental ray-casting to simulate what a player in-game would see.
 Every tick can be parsed through to find if a player has view of a specific position.
