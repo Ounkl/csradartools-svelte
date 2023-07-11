@@ -49,11 +49,11 @@ type Tick struct {
 }
 
 type Player struct {
-	Name          string
-	X             float64
-	Y             float64
-	ViewDirection float32
-	Team 		  byte
+	Name          string `json:"name"`
+	Position	  Point	 `json:"position"`
+	ViewDirection float32`json:"viewangle"`
+	Team 		  byte   `json:"team"`
+	Alive		  bool   `json:"alive"`
 }
 
 type Point struct {
@@ -164,7 +164,7 @@ func (a *App) parseMatch(dem demoinfocs.Parser) {
 		var players []Player
 
 		for _, player := range dem.GameState().Participants().Playing() {
-			players = append(players, Player{player.Name, player.Position().X, player.Position().Y, player.ViewDirectionX(), byte(player.Team)})
+			players = append(players, Player{player.Name, Point{player.Position().X, player.Position().Y}, player.ViewDirectionX(), byte(player.Team), player.IsAlive()})
 		}
 
 		a.demo.gameTicks = append(a.demo.gameTicks, Tick{players})
@@ -183,23 +183,26 @@ func (a *App) parseMatch(dem demoinfocs.Parser) {
 	}
 }
 
-func (a *App) GetPlayerPositions(tick int) []Point {
-
-	var players []Point
-
-	//fmt.Println(len(a.demo.gameTicks[tick].state.Participants().All()))
-	//fmt.Println(tick)
+func (a *App) GetPlayers(tick int) []Player {
+	//translate coordinates to html canvas coordinates
+	var players []Player
 
 	for _, player := range a.demo.gameTicks[tick].players {
-
-		//fmt.Println("Getting Positions")
-
-		x, y := a.demo.mapMetadata.TranslateScale(player.X, player.Y)
-
-		players = append(players, Point{x,y})
+		x, y := a.demo.mapMetadata.TranslateScale(player.Position.X, player.Position.Y)
+		pos := Point{x, y}
+		players = append(players, Player{player.Name, pos, player.ViewDirection, player.Team, player.Alive})
 	}
 
+	//fmt.Println(a.demo.gameTicks[tick].players)
+	
 	return players
+}
+
+func (a *App) GetPlayerPosition(player Player) Point {
+
+	x, y := a.demo.mapMetadata.TranslateScale(player.Position.X, player.Position.Y)
+
+	return Point{x,y}
 }
 
 func (a *App) WriteBoundary(boundary []Vector) {

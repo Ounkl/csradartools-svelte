@@ -14,8 +14,12 @@ export function GetDemo() {
   return window['go']['main']['App']['GetDemo']();
 }
 
-export function GetPlayerPositions(arg1) {
-  return window['go']['main']['App']['GetPlayerPositions'](arg1);
+export function GetPlayerPosition(arg1) {
+  return window['go']['main']['App']['GetPlayerPosition'](arg1);
+}
+
+export function GetPlayers(arg1) {
+  return window['go']['main']['App']['GetPlayers'](arg1);
 }
 
 export function GetRayCast(arg1) {
@@ -30,8 +34,8 @@ export function GetTicksOfInterest() {
   return window['go']['main']['App']['GetTicksOfInterest']();
 }
 
-export function GetViewDirections(arg1) {
-  return window['go']['main']['App']['GetViewDirections'](arg1);
+export function GetViewDirection(arg1) {
+  return window['go']['main']['App']['GetViewDirection'](arg1);
 }
 
 export function Greet(arg1) {

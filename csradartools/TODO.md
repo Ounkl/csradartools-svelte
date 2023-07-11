@@ -18,10 +18,6 @@ IDEA:
     Problems:
     All code needs to be rewritten and thought-through.
 
-# Make frontend more presentable and easy-to-use
-
-# Refactor all frontend code
-
 # Write unit tests
 IDEA:
     I often have to test each section of functions individually etc. It would be better to have this done automatically
@@ -34,3 +30,16 @@ IDEA:
     Not all sections of each function may be able to be tested
 
     Maybe need to refactor functions completely to have effective unit tests
+
+# Refactor all frontend code
+# refactor all structs into a demo.go file, parsematch and getdemo will be included here
+# change the parsematch such that it initializes every struct into empty arrays even if there are no players in the server
+
+# CURRENT: Completely overhaul the canvas code
+# Make frontend more presentable and easy-to-use
+# TODO: make progressbar scroll through the round and not the entire game
+# TODO: track the round and round-time
+# TODO: proper ct/team distinguishment, players disappear when they die
+
+# BUG: if last tick is reached you cannot watch the demo anymore, due to the for loop being destroyed.
+

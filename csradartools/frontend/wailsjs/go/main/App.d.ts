@@ -8,7 +8,9 @@ export function DefineControlVector(arg1:main.Vector,arg2:number):Promise<void>;
 
 export function GetDemo():Promise<void>;
 
-export function GetPlayerPositions(arg1:number):Promise<Array<main.Point>>;
+export function GetPlayerPosition(arg1:main.Player):Promise<main.Point>;
+
+export function GetPlayers(arg1:number):Promise<Array<main.Player>>;
 
 export function GetRayCast(arg1:number):Promise<Array<main.Vector>>;
 
@@ -16,7 +18,7 @@ export function GetTickCount():Promise<number>;
 
 export function GetTicksOfInterest():Promise<Array<number>>;
 
-export function GetViewDirections(arg1:number):Promise<Array<main.Vector>>;
+export function GetViewDirection(arg1:main.Player):Promise<main.Vector>;
 
 export function Greet(arg1:string):Promise<string>;
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"fmt"
 )
 
 func (a *App) GetRayCast(tick int) []Vector {
@@ -85,23 +86,14 @@ func (a *App) CheckControlVectors(tick int) bool {
 	return true
 }
 
-func (a *App) GetViewDirections(tick int) []Vector {
-
-	var directionRays []Vector
-
-	for _, player := range a.demo.gameTicks[tick].players {
-
-		playerVector := a.vectorFromPlayer(player)
-
-		directionRays = append(directionRays, playerVector)
-
-	}
-	return directionRays
+func (a *App) GetViewDirection(player Player) Vector {
+	return a.vectorFromPlayer(player)
 }
 
 //DONT FORGET TO HAVE A STATE PROVIDED
 func (a *App) DefineControlVector(vector Vector, state byte)  {
 	a.demo.controlVectors = append(a.demo.controlVectors, controlVector{Vector{Point{vector.A.X, -vector.A.Y}, Point{vector.B.X, -vector.B.Y}}, state})
+	fmt.Println(vector, state)
 }
 
 //returns the shortest intersection found (vector it intersects with, the distance), if it finds no intersection, returns false for safety.
@@ -144,7 +136,7 @@ func (a *App) vectorFromPlayer(player Player) (Vector) {
 	legb := 15 * math.Cos(float64(player.ViewDirection) * (math.Pi / 180))
 	lega := 15 * math.Sin(float64(player.ViewDirection) * (math.Pi / 180))
 
-	playerX, playerY := a.demo.mapMetadata.TranslateScale(player.X, player.Y)
+	playerX, playerY := a.demo.mapMetadata.TranslateScale(player.Position.X, player.Position.Y)
 	playerVectorPointA := Point{playerX, -playerY}
 	playerVectorPointB := Point{playerX + legb, -playerY + lega}
 
