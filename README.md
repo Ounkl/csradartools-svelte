@@ -10,6 +10,11 @@ Every tick can be parsed through to find if a player has view of a specific posi
 Experimental because the boundaries are a 2d simulation and will not give 100% accurate feedback to what a player would really see.
 Still good enough to filter out 90% of the fluff of a demo, though.
 
+Sample Screenshot:
+
+![Screenshot 2023-07-11 162413](https://github.com/Ounkl/csradartools-svelte/assets/114272436/c8ed55e8-370d-4fda-bf9e-743c002d6345)
+
+
 ## TODO
 See TODO.md.
 
